@@ -56,9 +56,18 @@ comes with a set of scripts to setup a new project and to control the scrapers t
 
 It also means that Scrapy doesn't work on its own. It requires a working Python installation
 (Python 2.7 and higher or 3.4 and higher - it should work in both Python 2 and 3), and a series of
-libraries to work. If you haven't installed Python or Scrapy on your machine, you can refer to the
-[setup instructions](/lc-webscraping/setup). If you install Scrapy as suggested there, it should take care to install all
-required libraries as well.
+libraries to work. 
+
+Today, we'll be using [NYU's JupyterHub](https://tutorials-1.rcnyu.org/hub/login). Once you've logged in, start a terminal by navigating to New-->Terminal on the top right.
+![Screenshot of the JupyterHub dropdown menu]({{ page.root }}/fig/jupyter-start-terminal.png)
+
+This will open a new tab in your browser. Set your Python environment to the one with Scrapy installed by typing the following:
+
+~~~
+conda activate RDM_main
+~~~
+
+If you are working locally on your own machine, and if you haven't installed Python or Scrapy yet, you can refer to the [setup instructions](/lc-webscraping/setup). If you install Scrapy as suggested there, it should take care to install all required libraries as well.
 
 You can verify that you have the latest version of Scrapy installed by typing
 
@@ -67,44 +76,41 @@ scrapy version
 ~~~
 {: .source}
 
-in a shell. If all is good, you should get the following back (as of February 2017):
+in a shell. If all is good, you should get the following back:
 
 ~~~
-Scrapy 1.3.2
+Scrapy 2.4.0
 ~~~
 {: .output}
 
 If you have a newer version, you should be fine as well.
 
-To introduce the use of Scrapy, we will reuse the same example we used in the previous
-section. We will start by scraping a list of URLs from [the list of members of the Ontario Legislative
-Assembly](http://www.ontla.on.ca/web/members/members_current.do?locale=en) and then visit those URLs to
-scrape [detailed information](http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085)
-about those ministers.
+To introduce the use of Scrapy, we will depart from our previous examples and work with an NYU website. We will start by scraping a list of URLs from [the list of NYU IFA faculty members](http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm) and then visit those URLs to
+scrape [detailed information](https://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm) about those faculty members.
 
 ## Setup a new Scrapy project
 
 The first thing to do is to create a new Scrapy project.
 
-Let's navigate first to a folder on our drive where we want to create our project (refer to Software
+If you're using JupyterHub, we can get started right away. If you are working locally on your machine, navigate first to a folder on your drive where you want to create our project (refer to Software
 Carpentry's lesson about the [UNIX shell](http://swcarpentry.github.io/shell-novice/) if you are
 unsure about how to do that). Then, type the following
 
 ~~~
-scrapy startproject ontariompps
+scrapy startproject ifafaculty
 ~~~
 {: .source}
 
-where `ontariompps` is the name of our project.
+where `ifafaculty` is the name of our project.
 
 Scrapy should respond will something similar to (the paths will reflect your own file structure)
 
 ~~~
-New Scrapy project 'ontariompps', using template directory '/Users/thomas/anaconda/lib/python3.5/site-packages/scrapy/templates/project', created in:
-    /Users/thomas/Documents/Computing/python-projects/scrapy/ontariompps
+New Scrapy project 'ifafaculty', using template directory '/opt/conda/envs/RDM_main/lib/python3.7/site-packages/scrapy/templates/project', created in:
+    /home/jovyan/ifafaculty
 
 You can start your first spider with:
-    cd ontariompps
+    cd ifafaculty
     scrapy genspider example example.com
 ~~~
 {: .output}
@@ -119,15 +125,14 @@ ls -F
 we should see that a new directory was created:
 
 ~~~
-ontariompps/
+ifafaculty/
 ~~~
 {: .output}
 
-(alongside any other files and directories you had lying around previously). Moving into that new
-directory
+(alongside any other files and directories you had lying around previously). Moving into that new directory
 
 ~~~
-cd ontariompps
+cd ifafaculty
 ~~~
 {: .source}
 
@@ -139,15 +144,15 @@ ls -F
 {: .source}
 
 ~~~
-ontariompps/	scrapy.cfg
+ifafaculty/	scrapy.cfg
 ~~~
 {: .output}
 
-Yes, confusingly, Scrapy creates a subdirectory called `ontariompps` within the `ontariompps` project
+Yes, confusingly, Scrapy creates a subdirectory called `ifafaculty` within the `ifafaculty` project
 directory. Inside that _second_ directory, we see a bunch of additional files:
 
 ~~~
-ls -F ontariompps
+ls -F ifafaculty
 ~~~
 {: .source}
 
@@ -157,26 +162,6 @@ __pycache__	pipelines.py	spiders/
 ~~~
 {: .output}
 
-To recap, here is the structure that `scrapy startproject` created:
-
-~~~
-ontariompps/			# the root project directory
-	scrapy.cfg		# deploy configuration file
-
-	ontariompps/		# project's Python module, you'll import your code from here
-		__init__.py
-
-		items.py		# project items file
-
-		pipelines.py	# project pipelines file
-
-		settings.py	# project settings file
-
-		spiders/		# a directory where you'll later put your spiders
-			__init__.py
-			...
-~~~
-{: .output}
 
 We will introduce what those files are for in the next paragraphs. The most important item is the
 `spiders` directory: this is where we will write the scripts that will scrape the pages we
@@ -200,25 +185,41 @@ scrapy genspider <SCRAPER NAME> <START URL>
 {: .source}
   
 We just need to replace `<SCRAPER NAME>` with the name we want to give our spider and `<START URL>` with
-the URL we want to spider to crawl. In our case, we can type:
+the URL we want to spider to crawl. First, make sure you are in the top level `ifafaculty` folder. Then, we can type:
 
 ~~~
-scrapy genspider mppaddresses www.ontla.on.ca/web/members/members_current.do?locale=en
+scrapy genspider ifabios www.nyu.edu/gsas/dept/fineart/people/faculty.htm
 ~~~
 {: .source}
 
-This will create a file called `mppaddresses.py` inside the `spiders` directory of our project.
-Using our favourite text editor, let's open that file. It should look something like this:
+This will create a file called `ifabios.py` inside the `spiders` directory of our project.
+Let's open that file. If you're using JupyterHub, toggle back to your "Home" tab (making sure not to close the browser tab with your terminal window) and open the file. If you are working locally on your machine, you can open this file in your favorite text editor, for example SublimeText or TextEdit.  It should look something like this:
 
 ~~~
 import scrapy
 
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses"  # The name of this spider
+
+class IfabiosSpider(scrapy.Spider):
+    name = 'ifabios'
+    allowed_domains = ['www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm/']
+
+    def parse(self, response):
+        pass
+
+~~~
+
+Here is this same script, but marked up with comments that explain what each line means:
+~~~
+import scrapy
+
+
+class IfabiosSpider(scrapy.Spider):
+    name = "ifabios"  # The name of this spider
 	
     # The allowed domain and the URLs where the spider should start crawling:
-    allowed_domains = ["www.ontla.on.ca/web/members/members_current.do?locale=en"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
+    allowed_domains = ['www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm/']
 	
     # And a 'parse' function, which is the main method of the spider. The content of the scraped
     # URL is passed on as the 'response' object:
@@ -227,22 +228,20 @@ class MppaddressesSpider(scrapy.Spider):
 ~~~
 {: .source}
 
-Note that here some comments have been added for extra clarity, they will not be there upon
-first creating a spider.
 
 > ## Don't include `http://` when running `scrapy genspider`
 >
-> The current version of Scrapy (1.3.2 - February 2017) apparently only expects URLs without
+> The current version of Scrapy apparently only expects URLs without
 > `http://` when running `scrapy genspider`. If you do include the `http` prefix, you might
 > see that the value in `start_url` in the generated spider will have that prefix twice, because
 > Scrapy appends it by default. This will cause your spider to fail. Either run `scrapy genspider`
-> without `http://` or check the resulting spider so that it looks like the code above.
+> without `http://` or amend the resulting spider so that it looks like the code above.
 >
 {: .callout}
 
 > ## Object-oriented programming and Python classes
 >
-> You might be unfamiliar with the `class MppaddressesSpider(scrapy.Spider)` syntax used above.
+> You might be unfamiliar with the `class IfabiosSpider(scrapy.Spider)` syntax used above.
 > This is an example of [Object-oriented programming](https://en.wikipedia.org/wiki/Object-oriented_programming).
 >
 > All elements of a piece of Python code are __objects__: functions, variables, strings, integers, etc.
@@ -259,7 +258,7 @@ first creating a spider.
 > attributes and methods of `Pet` (dogs have names and can run and cuddle) but would __extend__ the `Pet` class
 > by adding dog-specific things like a `pedigree` attribute and a `bark()` method.
 >
-> The code in the example above is defining a __class__ called `MppaddressesSpider` that __inherits__ the `Spider` class
+> The code in the example above is defining a __class__ called `IfabiosSpider` that __inherits__ the `Spider` class
 > defined by Scrapy (hence the `scrapy.Spider` syntax). We are __extending__ the default `Spider` class by defining
 > the `name`, `allowed_domains` and `start_urls` attributes, as well as the `parse()` method.
 >
@@ -285,7 +284,7 @@ has automatically generated.
 > has ended up in the `allowed_domains` attribute. 
 > 
 > Is this desired? What do you think would happen
-> if later in our code we wanted to scrape a page living at the address `www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085`?
+> if later in our code we wanted to scrape a page living at the address `https://www.nyu.edu/gsas/dept/fineart/people/special-appointments.htm`?
 > > ## Solution
 > > 
 > > `allowed_domains` is a safeguard for our spider, it will restrict its ability to scrape pages
@@ -300,9 +299,9 @@ has automatically generated.
 > > if we set `allowed_domains = ["www.mydomain.ca/"]`, the spider can scrape both the contents of
 > > the `house/` and `garage/` directories.
 > > 
-> > To answer the question, leaving `allowed_domains = ["www.ontla.on.ca/web/members/members_current.do?locale=en"]`
+> > To answer the question, leaving `allowed_domains = ["www.nyu.edu/gsas/dept/fineart/people/faculty.htm"]`
 > > would restrict the spider to pages with URLs of the same pattern, and 
-> > `http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085`
+> > `https://www.nyu.edu/gsas/dept/fineart/people/special-appointments.htm`
 > > if of a different pattern, so Scrapy would prevent the spider from scraping it.
 > >
 > {: .solution}
@@ -311,11 +310,11 @@ has automatically generated.
 >
 > > ## Solution
 > > 
-> > We should let the spider scrape all pages inside the `www.ontla.on.ca` domain by editing
+> > We should let the spider scrape all pages inside the `www.nyu.edu/gsas/dept/fineart/people/` domain by editing
 > > it so that it reads:
 > >
 > > ~~~
-> > allowed_domains = ["www.ontla.on.ca"]
+> > allowed_domains = ["www.nyu.edu/gsas/dept/fineart/people/"]
 > > ~~~
 > > {: .source}
 > >
@@ -323,25 +322,23 @@ has automatically generated.
 >
 {: .challenge} 
  
-Here is what the spider looks like after cleaning the code a little:
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+Let's go back to our `ifabios.py` file and make sure to set the allowed domain to be more encompassing. In this case, we'll also want to remove a trailing slash at the end of the start_url.
 
 ~~~
 import scrapy
 
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses"  
+class IfabiosSpider(scrapy.Spider):
+    name = "ifabios"  
 	
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
+    allowed_domains = ["www.nyu.edu/gsas/dept/fineart/people/"]
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
 
     def parse(self, response):
         pass
 ~~~
 {: .source}
 
-Don't forget to save the file once changes have been applied.
+Don't forget to save the file (File-->Save in the JupyterHub dropdown menu) once you have made these changes.
 
 ## Running the spider
 
@@ -350,39 +347,44 @@ we are located in the project's top level directory (where the `scrapy.cfg` file
 `cd` as required, then we can run:
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
-Note that we can now use the name we have chosen for our spider (`mppaddresses`, as specified in the `name` attribute)
+Note that we can now use the name we have chosen for our spider (`ifabios`, as specified in the `name` attribute)
 to call it. This should produce the following result
 
 ~~~
-2016-11-07 22:28:51 [scrapy] INFO: Scrapy 1.3.2 started (bot: mppaddresses)
+2020-11-02 23:56:38 [scrapy.utils.log] INFO: Scrapy 2.4.0 started (bot: ifafaculty)
 
-(followed by a bunch of debugging output ending with:)
+...
 
-2017-02-26 22:08:51 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_current.do?locale=en/> (referer: None)
-2017-02-26 22:08:52 [scrapy.core.engine] INFO: Closing spider (finished)
-2017-02-26 22:08:52 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
-{'downloader/request_bytes': 477,
+2020-11-02 23:56:38 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm> (referer: None)
+2020-11-02 23:56:38 [scrapy.core.engine] INFO: Closing spider (finished)
+2020-11-02 23:56:38 [scrapy.statscollectors] INFO: Dumping Scrapy stats:
+{'downloader/request_bytes': 553,
  'downloader/request_count': 2,
  'downloader/request_method_count/GET': 2,
- 'downloader/response_bytes': 34187,
+ 'downloader/response_bytes': 7681,
  'downloader/response_count': 2,
  'downloader/response_status_count/200': 2,
+ 'elapsed_time_seconds': 0.343902,
  'finish_reason': 'finished',
- 'finish_time': datetime.datetime(2017, 2, 27, 3, 8, 52, 16404),
- 'log_count/DEBUG': 3,
- 'log_count/INFO': 7,
+ 'finish_time': datetime.datetime(2020, 11, 3, 4, 56, 38, 692245),
+ 'log_count/DEBUG': 2,
+ 'log_count/INFO': 10,
+ 'memusage/max': 56266752,
+ 'memusage/startup': 56266752,
  'response_received_count': 2,
+ 'robotstxt/request_count': 1,
+ 'robotstxt/response_count': 1,
+ 'robotstxt/response_status_count/200': 1,
  'scheduler/dequeued': 1,
  'scheduler/dequeued/memory': 1,
  'scheduler/enqueued': 1,
  'scheduler/enqueued/memory': 1,
- 'start_time': datetime.datetime(2017, 2, 27, 3, 8, 51, 594573)}
-2017-02-26 22:08:52 [scrapy.core.engine] INFO: Spider closed (finished)
-
+ 'start_time': datetime.datetime(2020, 11, 3, 4, 56, 38, 348343)}
+2020-11-02 23:56:38 [scrapy.core.engine] INFO: Spider closed (finished)
 ~~~
 {: .output}
 
@@ -392,18 +394,9 @@ Scrapy received in response of its request to access that page. 200 means that t
 and that data (the actual HTML content of that page) was sent back in response.
 
 However, we didn't do anything with it, because the `parse` method in our spider is currently empty.
-Let's change that by editing the spider as follows (note the contents of the `parse` method):
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+Switching back to our `ifabios.py` browser tab, let's change that by editing the spider's `parse` method as follows:
 
 ~~~
-import scrapy
-
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses"
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
-
     def parse(self, response):
         with open("test.html", 'wb') as file:
             file.write(response.body)
@@ -413,7 +406,7 @@ class MppaddressesSpider(scrapy.Spider):
 Now, if we go back to the command line and run our spider again
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
@@ -426,112 +419,90 @@ ls -F
 {: .source}
 
 ~~~
-ontariompps/	scrapy.cfg	test.html
+ifabios/	scrapy.cfg	test.html
 ~~~
 {: .output}
 
 We can check that it contains the HTML from our target URL:
 
 ~~~
-less test.html
+head test.html
 ~~~
 {: .source}
 
 ~~~
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+<!DOCTYPE HTML>
+<!--[if lt IE 9]>Some features of the Institute's website may not function properly with this version of Internet Explorer. Please consider updating your browser by <a href="http://windows.microsoft.com/en-us/internet-explorer/download-ie">clicking here</a>.  <![endif]-->
+<html lang="en">
 <head>
-(...)
-<title>
-Legislative Assembly of Ontario |
-Members (MPPs) |
-Current MPPs</title>
-(...)_
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="description" content="The Institute: your destination for the past, present, and future of art.">
+
+<!-- OG Tags -->
+<meta property="og:image" content="http://www.nyu.edu/gsas/dept/fineart/images/headerImages/header-Fall.jpg" />
 ~~~
 {: .output}
 
 ## Defining which elements to scrape using XPath
 
-Now that we know how to access the content of the [web page with the list of all Ontario MPPs](http://www.ontla.on.ca/web/members/members_current.do?locale=en),
+Now that we know how to access the content of the [web page with the list of IFA faculty](https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm),
 the next step is to extract the information we are interested in, in that case the URLs pointing
-to the detail pages for each politician.
+to the detail pages for each faculty member.
 
 Using the techniques we have [learned earlier](/02-xpath), we can start by looking at
-the source code for our [target page](http://www.ontla.on.ca/web/members/members_current.do?locale=en)
+the source code for our [target page](https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
 by using either the "View Source" or "Inspect" functions of our browser.
 Here is an excerpt of that page:
 
 ~~~
 (...)
-<div class="tablebody">
-	<table>
-		<tr class="oddrow" id="MemberID7085">
-			<td class="mppcell" >
-				<a href="members_detail.do?locale=en&amp;ID=7085">
-					Albanese, Hon Laura&nbsp;
-				</a>
-			</td>
-			<td class="ridingcell" >
-				York South&#8212;Weston&nbsp;
-			</td>
-		</tr>
-		<tr class="evenrow" id="MemberID7275">
-			<td class="mppcell" >
-				<a href="members_detail.do?locale=en&amp;ID=7275">
-					Anderson, Granville&nbsp;
-				</a>
-			</td>
-			<td class="ridingcell" >
-				Durham&nbsp;
-			</td>
-		</tr>
-		(...)
-	</table>
-</div>
+    <div class="mainContent" id="MainContent" role="main">
+      <h1 class="heading">The Institute of Fine Arts Faculty</h1>
+      <h2 class="subheading">Academic Administration</h2>
+      <table role="presentation">
+        <tr>
+          <td style="width:120px;" class="contentFaculty"><img src="../images/faculty-thumbs/poggi-thumb.jpg" alt="" width="100" height="100"></td>
+          <td class="contentFaculty"><a href="faculty/poggi.htm">Christine Poggi </a><br>
+            <span class="italic">Judy and Michael Steinhardt Director; Professor of Fine Arts</span> <br>
+            <span class="greycontent">Fields of study: Nineteenth- and Twentieth-Century Art, Contemporary Art</span></td>
+        </tr>
+        <tr>
+          <td class="contentFaculty"><img src="../images/faculty-thumbs/sullivan-thumb.jpg" alt="" width="100" height="100"></td>
+          <td class="contentFaculty"><a href="faculty/sullivan.htm" >Edward J. Sullivan</a> <span class="italic">(on sabbatical    spring 2022)</span><br>
+            <span class="italic">Deputy Director; Helen Gould Shepard Professor in the History of Art; <br>
+            The
+            Institute of Fine Arts and College of Arts and Sciences</span><br>
+            <span class="greycontent">Fields of study: Latin American (including Brazilian) and Caribbean art, 17th century to present; Latinx art; art of the Iberian Peninsula; contemporary art</span></td>
+        </tr>
 (...)
 ~~~
 {: .output}
 
 There are different strategies to target the data we are interested in. One of them is to identify
-that the URLs are inside `td` elements of the class `mppcell`.
+that the URLs are inside `td` elements of the class `contentFaculty`.
 
-We recall that the XPath syntax to access all such elements is `//td[@class='mppcell']`, which we can
+We recall that the XPath syntax to access all such elements is `//td[@class='contentFaculty']`, which we can
 try out in the browser console:
 
 ~~~
-> $x("//td[@class='mppcell']")
+> $x("//td[@class='contentFaculty']")
 ~~~
 {: .source}
-
-> ## Selecting elements assigned to multiple classes
->
-> The above XPath works in this case because the target `td` elements are only assigned to the
-> `mppcell` class. It wouldn't work if those elements had more than one class, for example
-> `<td class="mppcell sampleclass">`. The more general syntax to select elements that belong to
-> the `mppcell` class and potentially other classes as well is
->
-> ~~~
-> `//*[contains(concat(" ", normalize-space(@class), " "), " mppcell ")]`
-> ~~~
-> {: .source}
->
-> This [comment on StackOverflow](http://stackoverflow.com/a/9133579) has more details on
-> this issue.
->
-{: .discussion}
 
 Once we were able to confirm that we are targeting the right cells, we can expand our XPath query
 to only select the `href` attribute of the URL:
 
 ~~~
-> $x("//td[@class='mppcell']/a/@href")
+> $x("//td[@class='contentFaculty']//a/@href")
 ~~~
 {: .source}
 
-This returns an array of objects:
+Note that for this page, we'll use the double slash in front of the `a` element because in a couple of instances, a `<p>` HTML element has snuck between the `<td>` and `<a>` elements. This xpath expression returns an array of objects:
 
 ~~~
-<- Array [ href="members_detail.do?locale=en&amp;ID=7085", href="members_detail.do?locale=en&amp;ID=7275", 103 more… ]
+$x("//td[@class='contentFaculty']//a/@href")
+(58) [href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href, href]
 ~~~
 {: .output}
 
@@ -545,7 +516,7 @@ queries from within Scrapy.
 This is achieved by calling the _Scrapy shell_ from the command line:
 
 ~~~
-scrapy shell http://www.ontla.on.ca/web/members/members_current.do?locale=en/
+scrapy shell https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm
 ~~~
 {: .source}
 
@@ -556,57 +527,60 @@ interactive python console because the prompt will have changed to `>>>`:
 ~~~
 (similar Scrapy debug text as before)
 
-2017-02-26 22:31:04 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_current.do?locale=en/> (referer: None)
+2020-11-03 00:25:29 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm> (referer: None)
+2020-11-03 00:25:30 [asyncio] DEBUG: Using selector: EpollSelector
 [s] Available Scrapy objects:
 [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
-[s]   crawler    <scrapy.crawler.Crawler object at 0x1114356d8>
+[s]   crawler    <scrapy.crawler.Crawler object at 0x7fbf676d21d0>
 [s]   item       {}
-[s]   request    <GET http://www.ontla.on.ca/web/members/members_current.do?locale=en/>
-[s]   response   <200 http://www.ontla.on.ca/web/members/members_current.do?locale=en/>
-[s]   settings   <scrapy.settings.Settings object at 0x111f40908>
-[s]   spider     <DefaultSpider 'default' at 0x11320acc0>
+[s]   request    <GET https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm>
+[s]   response   <200 https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm>
+[s]   settings   <scrapy.settings.Settings object at 0x7fbf672e0990>
+[s]   spider     <DefaultSpider 'default' at 0x7fbf66e29510>
 [s] Useful shortcuts:
 [s]   fetch(url[, redirect=True]) Fetch URL and update local objects (by default, redirects are followed)
-[s]   fetch(req)                  Fetch a scrapy.Request and update local objects 
+[s]   fetch(req)                  Fetch a scrapy.Request and update local objects
 [s]   shelp()           Shell help (print this help)
 [s]   view(response)    View response in a browser
->>>
+2020-11-03 00:25:30 [asyncio] DEBUG: Using selector: EpollSelector
+In [1]:
 ~~~
 {: .output}
 
 We can now try running the XPath query we just devised against the `response` object, which in Scrapy
-contains the downloaded web page:
+contains the downloaded web page. Next to where your terminal shows `In [1]:` type the following:
 
 ~~~
->>> response.xpath("//td[@class='mppcell']/a/@href")
+response.xpath("//td[@class='contentFaculty']//a/@href")
 ~~~
 {: .source}
 
 This will return a bunch of `Selector` objects (one for each URL found):
 
 ~~~
-[<Selector xpath="//td[@class='mppcell']/a/@href" data='members_detail.do?locale=en&ID=7085'>, 
- <Selector xpath="//td[@class='mppcell']/a/@href" data='members_detail.do?locale=en&ID=7275'>,
- ...]
->>>
+<Selector xpath="//td[@class='contentFaculty']//a/@href" data='faculty/poggi.htm'>,
+ <Selector xpath="//td[@class='contentFaculty']//a/@href" data='faculty/sullivan.htm'>,
+ <Selector xpath="//td[@class='contentFaculty']//a/@href" data='faculty/ellis.htm'>,
+ <Selector xpath="//td[@class='contentFaculty']//a/@href" data='faculty/ellis.htm'>,
+ <Selector xpath="//td[@class='contentFaculty']//a/@href" data='faculty/thomas.htm'>
+ ...
 ~~~
 {: .output}
 
 Those objects are pointers to the different element in the scraped page (`href` attributes) as
-defined by our XPath query. To get to the actual content of those elements (the text of the URLs),
+defined by our XPath query. You might notice some duplicates, but we'll take care of this later. To get to the actual content of those elements (the text of the URLs),
 we can use the `extract()` method. A variant of that method is `extract_first()` which does the
-same thing as `extract()` but only returns the first element if there are more than one:
+same thing as `extract()` but only returns the first element if there are more than one. Let's try this in `scrapy shell`:
 
 ~~~
->>> response.xpath("//td[@class='mppcell']/a/@href").extract_first()
+response.xpath("//td[@class='contentFaculty']//a/@href").extract_first()
 ~~~
 {: .source}
 
 returns
 
 ~~~
-'members_detail.do?locale=en&ID=7085'
->>> 
+'faculty/poggi.htm'
 ~~~
 {: .output}
 
@@ -615,7 +589,7 @@ returns
 > Looking at this result and at the source code of the page, we realize that the URLs are all
 > _relative_ to that page. They are all missing part of the URL to become _absolute_ URLs, which
 > we will need if we want to ask our spider to visit those URLs to scrape more data. We could
-> prefix all those URLs with `http://www.ontla.on.ca/web/members/` to make them absolute, but
+> prefix all those URLs with `https://www.nyu.edu/gsas/dept/fineart/people/faculty/` to make them absolute, but
 > since this is a common occurence when scraping web pages, Scrapy provides a built-in function
 > to deal with this issue.
 >
@@ -623,26 +597,26 @@ returns
 > variable:
 >
 > ~~~
-> >>> testurl = response.xpath("//td[@class='mppcell']/a/@href").extract_first()
+> testurl = response.xpath("//td[@class='contentFaculty']//a/@href").extract_first()
 > ~~~
 > {: .source}
 >
 > Then, we can try passing it on to the `urljoin()` method:
 >
 > ~~~
-> >>> response.urljoin(testurl)
+> response.urljoin(testurl)
 > ~~~
 > {: .source}
 >
 > which returns
 >
 > ~~~
-> 'http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085'
+> 'https://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm'
 > ~~~
 > {: .output}
 >
 > We see that Scrapy was able to reconstruct the absolute URL by combining the URL of the current page context
-> (the page in the `response` object) and the relative link we had stored in `testurl`.
+> (the page in the `response` object) and the relative link we had stored in `testurl`. Make sure to type `exit()` in your terminal window to quit the Scrapy shell.
 >
 {: .callout}
 
@@ -650,7 +624,7 @@ returns
 ## Extracting URLs using the spider
 
 Armed with the correct query, we can now update our spider accordingly. The `parse`
-methods returns the contents of the scraped page inside the `response` object. The `response`
+method returns the contents of the scraped page inside the `response` object. The `response`
 object supports a variety of methods to act on its contents:
 
 |Method|Description|
@@ -682,20 +656,11 @@ to get the "content" that the `selectors` are pointing to, the following methods
 {: .callout}
 
 Since we have an XPath query we know will extract the URLs we are looking for, we can now use
-the `xpath()` method and update the spider accordingly:
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+the `xpath()` method and update the spider accordingly. Let's go back to the `ifabios.py` tab we have open and continue tweaking the `parse` method.
 
 ~~~
-import scrapy
-
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses"
-    allowed_domains = ["www.ontla.on.ca"]
-    start\_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
-
     def parse(self, response):
-        for url in response.xpath("//*[@class='mppcell']/a/@href").extract():
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract():
             print(response.urljoin(url))
 ~~~
 {: .source}
@@ -719,26 +684,36 @@ class MppaddressesSpider(scrapy.Spider):
 We can now run our new spider:
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
 which produces a result similar to:
 
 ~~~
-2017-02-26 23:06:10 [scrapy.utils.log] INFO: Scrapy 1.3.2 started (bot: ontariompps)
+2017-02-26 23:06:10 [scrapy.utils.log] INFO: Scrapy 1.3.2 started (bot: ifafaculty)
 (...)
-http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=2111
-http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=2139
-http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7174
-http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=2148
+2020-11-03 00:38:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm> (referer: None)
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/lubar.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/cohen.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/crow.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/eisler.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/flood.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/hay.htm
+http://www.nyu.edu/gsas/dept/fineart/people/faculty/howley.htm
+http://www.n
 (...)
-2017-02-26 23:06:11 [scrapy.core.engine] INFO: Spider closed (finished)
+2020-11-03 00:38:23 [scrapy.core.engine] INFO: Spider closed (finished)
 ~~~
 {: .output}
 
 We can now pat ourselves on the back, as we have successfully completed the first stage
-of our project by successfully extracing all URLs leading to the minister profiles!
+of our project by successfully extracing all URLs leading to the faculty profiles!
 
 > ## Limit the number of URL to scrape through while debugging
 >
@@ -767,19 +742,12 @@ of our project by successfully extracing all URLs leading to the minister profil
 > list[:]         # all items
 > ~~~
 > 
-> We can therefore edit our spider thusly to only scrape the first five URLs:
+> We can therefore edit our `parse` method thusly to only scrape the first five URLs:
 >
 > ~~~
-> import scrapy
-> 
->    class MppaddressesSpider(scrapy.Spider):
->        name = "mppaddresses"
->        allowed_domains = ["www.ontla.on.ca"]
->        start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
->
->        def parse(self, response):
->            for url in response.xpath("//*[@class='mppcell']/a/@href").extract()[:5]:
->                print(response.urljoin(url))
+    def parse(self, response):
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract()[:5]:
+            print(response.urljoin(url))
 > ~~~
 > {: .source}
 >
@@ -793,51 +761,25 @@ of our project by successfully extracing all URLs leading to the minister profil
 Now that we were successful in harvesting the URLs to the detail pages, let's begin by editing
 our spider to instruct it to visit those pages one by one.
 
-For this, let's begin by defining a new method `get_details` that we want to run on the detail pages:
-
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+For this, let's begin by changing our `parse` method a bit by creating a full_url variable and using the `urljoin` function. We'll also add a bit that tells Scrapy to scrape the URL in the 'full_url' variable and calls the 'get_details() method below with the content of this URL. Finally, let's define our new method `get_details` that we want to run on the detail pages. We're going to add a parameter here, `dont_filter=True`, because of the way this site is set up (the original example in this lesson did not require this).
 
 ~~~
-import scrapy
-
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses" # The name of this spider
-    
-    # The allowed domain and the URLs where the spider should start crawling:
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
-
     def parse(self, response):
-        # The main method of the spider. It scrapes the URL(s) specified in the
-        # 'start_url' argument above. The content of the scraped URL is passed on
-        # as the 'response' object.
-        
-        for url in response.xpath("//*[@class='mppcell']/a/@href").extract()[:5]:
-            # This loops through all the URLs found inside an element of class 'mppcell'
-			
-            # Constructs an absolute URL by combining the response’s URL with a possible relative URL:
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract()[:5]:
             full_url = response.urljoin(url)
             print("Found URL: "+full_url)
             
-            # The following tells Scrapy to scrape the URL in the 'full_url' variable
-            # and calls the 'get_details() method below with the content of this
-            # URL:
-            yield scrapy.Request(full_url, callback=self.get_details)
+            yield scrapy.Request(full_url, callback=self.get_details, dont_filter=True)
     
     def get_details(self, response):
-        # This method is called on by the 'parse' method above. It scrapes the URLs
-        # that have been extracted in the previous step.
         print("Visited URL: "+response.url)
 ~~~
 {: .source}
 
-We've also added some comments to the code to make it easier to read and understand.
-
 If we now run our spider again:
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
@@ -845,21 +787,23 @@ We should see the result of our `print` statements intersped with the regular Sc
 debugging output, something like:
 
 ~~~
-2017-02-27 20:39:42 [scrapy.utils.log] INFO: Scrapy 1.3.2 started (bot: ontariompps)
-(...)
-2017-02-27 20:39:43 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_current.do?locale=en/> (referer: None)
-Found URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085
-Found URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7275
-(...)
-2017-02-27 20:39:44 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085> (referer: http://www.ontla.on.ca/web/members/members_current.do?locale=en/)
-(...)
-Visited URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085
-(...)
-2017-02-27 20:39:44 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7086> (referer: http://www.ontla.on.ca/web/members/members_current.do?locale=en/)
-(...)
-Visited URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7225
-(...)
-2017-02-27 20:39:44 [scrapy.core.engine] INFO: Closing spider (finished)
+...
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm
+2020-11-03 00:47:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+2020-11-03 00:47:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+2020-11-03 00:47:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+2020-11-03 00:47:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+2020-11-03 00:47:23 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm
+2020-11-03 00:47:23 [scrapy.core.engine] INFO: Closing spider (finished)
 ~~~
 {: .output}
 
@@ -895,21 +839,17 @@ Now that we are able to visit each one of the detail pages, we should work on ge
 data that we want out of them. In our example, we are primarily looking
 to extract the following details:
 
-* Phone number(s)
-* Email address(es)
+* Faculty bio
 
-Unfortunately, it looks like the content of those pages is not consistent. Sometimes, only
-one email address is displayed, sometimes more than one. Some MPPs have one Constituency
-address, others have more than one, etc.
+There is other interesting content, but unfortunately, it looks like the content of those pages is not consistent.
 
-To simplify, we are going to stop at the first phone number and the first
-email address we find on those pages, although in a real life scenario we might be interested
+To simplify for this exercise, we are going to stop at the first paragraph of the faculty bio section, although in a real life scenario we might be interested
 in writing more precise queries to make sure we are collecting the right information.
 
-> ## Scrape phone number and email address
-> Write XPath queries to scrape the first phone number and the first email address
+> ## Scrape faculty names and bios
+> Write XPath queries to scrape the name and first paragraph of the faculty bio
 > displayed on each of the detail pages that are linked from
-> the [Ontario MPPs list](http://www.ontla.on.ca/web/members/members_current.do?locale=en).
+> the [IFA faculty page](https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm).
 >
 > Try out your queries on a handful of detail pages to make sure you are getting
 > consistent results.
@@ -926,28 +866,30 @@ in writing more precise queries to make sure we are collecting the right informa
 >
 > > ## Solution
 > >
-> > This returns an array of phone (and fax) numbers (using the Scrapy shell):
+> > This returns an array of paragraphs (using the Scrapy shell):
 > >
 > > ~~~
-> > scrapy shell "http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085"
-> > >>> response.xpath("//div[@class='phone']/text()").extract()
+> > scrapy shell "https://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm"
+> > >>> response.xpath("//div[@class='statement']/article/p/text()").extract()
 > > ~~~
 > > {: .source}
 > >
 > > ~~~
-> > [['\n416-325-6200\n', '\n416-325-6195\n', '\n416-243-7984\n', '\n416-243-0327\n']
+> > ['Much of my research has focused on early twentieth-century European avant-gardes, the invention of collage and constructed sculpture, the rise of abstraction, and the relationship of art to emerging forms of labor, technology, and new media. Iam also interested in the interplay of text and image, the representation of the crowd, and the engagement with theater and performance in modern art from the mid-nineteenth century to the present. The issues taken up in my work on the early-twentieth century have often overflowed and expanded into related essays on contemporary art. In general, I prefer to think ofthe modern/contemporary period without fixed chronological or geographical boundaries and to see how issues or ideas may be elaborated or developed over time and across borders in new and surprising ways.\xa0 I find that my work on the early twentieth-century avant-gardes informs and enriches my perspective on contemporary art and vice versa.',
+ 'My first book, ',
+ ...]
 > > ~~~
 > > {: .output}
 > >
-> > And this returns an array of email addresses:
+> > And this returns an array of names (in this case, just one value is in the list):
 > >
-> > ~~~
-> > >>> response.xpath("//div[@class='email']/a/text()").extract()
-> > ~~~
+~~~
+response.xpath("//div[@id='MainContent']//*[@class='heading']/text()").extract()
+~~~
 > > {: .source}
 > >
 > > ~~~
-> > ['\nlalbanese.mpp@liberal.ola.org\n', '\nlalbanese.mpp.co@liberal.ola.org\n']
+> >  ['Christine Poggi']
 > > ~~~
 > > {: .output}
 > >
