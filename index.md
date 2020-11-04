@@ -38,7 +38,7 @@ in the data.
 
 ## Software requirements
 
-Refer to the [Setup](/lc-webscraping/setup) section to install the required software to follow along this lesson.
+Refer to the Setup section to install the required software to follow along this lesson.
 
 > ## Under development
 >
