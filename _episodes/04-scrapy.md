@@ -24,6 +24,8 @@ keypoints:
 - "Scrapy will automatically stored extracted data in CSS, JSON or XML format based on the file extension given in the -o option."
 ---
 
+The material in this section was adapted for the NYU Library Carpentries workshop (November, 2020) by Alexandra Provo.
+
 ## Recap
 Here is what we have learned so far:
 
@@ -450,7 +452,7 @@ Now that we know how to access the content of the [web page with the list of IFA
 the next step is to extract the information we are interested in, in that case the URLs pointing
 to the detail pages for each faculty member.
 
-Using the techniques we have [learned earlier](/02-xpath), we can start by looking at
+Using the techniques we have [learned earlier](lc-webscraping/02-xpath), we can start by looking at
 the source code for our [target page](https://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
 by using either the "View Source" or "Inspect" functions of our browser.
 Here is an excerpt of that page:
@@ -881,7 +883,18 @@ in writing more precise queries to make sure we are collecting the right informa
 > > ~~~
 > > {: .output}
 > >
-> > And this returns an array of names (in this case, just one value is in the list):
+> > By using `extract_first()`, we can grab only the first paragraph (using the Scrapy shell):
+> >
+> > ~~~
+> > scrapy shell "https://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm"
+> > >>> response.xpath("//div[@class='statement']/article/p/text()").extract_first()
+> > ~~~
+> > {: .source}
+> >
+> > ~~~
+'Much of my research has focused on early twentieth-century European avant-gardes, the invention of collage and constructed sculpture, the rise of abstraction, and the relationship of art to emerging forms of labor, technology, and new media. I am also interested in the interplay of text and image, the representation of the crowd, and the engagement with theater and performance in modern art from the mid-nineteenth century to the present. The issues taken up in my work on the early-twentieth century have often overflowed and expanded into related essays on contemporary art. In general, I prefer to think of the modern/contemporary period without fixed chronological or geographical boundaries and to see how issues or ideas may be elaborated or developed over time and across borders in new and surprising ways.\xa0 I find that my work on the early twentieth-century avant-gardes informs and enriches my perspective on contemporary art and vice versa.'
+> > ~~~
+> > And the following returns an array of names. In this case, just one value is in the list. Note that a wildcard is helpful, because some faculty pages use the "heading" attribute in `<h1>` element, and others use a `<p>` element!
 > >
 ~~~
 response.xpath("//div[@id='MainContent']//*[@class='heading']/text()").extract()
@@ -897,116 +910,70 @@ response.xpath("//div[@id='MainContent']//*[@class='heading']/text()").extract()
 >
 {: .challenge}
 
-> ## Scraping using Regular Expressions
-> In combination with XPath queries, it is also possible to use [Regular Expressions](https://en.wikipedia.org/wiki/Regular_expression)
-> to scrape the contents of a web page.
->
-> This is done by using the `re()` method. That method behaves a bit differently
-> than the `xpath()` method in that it has to be applied on a `selector` object
-> and returns an array of unicode strings (it is therefore not necessary to
-> use `extract()` on its results).
->
-> Using the Scrapy shell, try writing a query that selects all phone numbers found on
-> a politician's detail page regardless of where they are located, using Regular Expressions.
->
-> You might find the [Regex 101](https://regex101.com/) interactive Regular Expressions
-> tester useful to get to the proper syntax.
->
-> Tips:
->
-> * We are looking for phone numbers following the North American syntax: ###-###-####
-> * `re()` expects a regular expression string which should be prefixed by `r` as in `re(r'Name:\s*(.*)')`.
-> * Remember that `re()` is run on a `selector` object, so you can't do `response.re(r'...')`. Instead you may
->   want to try doing something like `response.xpath('//body').re(r'...')`.
->
-> > ## Solution
-> >
-> > This returns an array of phone (and fax) numbers (using the Scrapy shell):
-> >
-> > ~~~
-> > scrapy shell "http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085"
-> > >>> response.xpath('//body').re(r'\d{3}-\d{3}-\d{4}')
-> > ~~~
-> > {: .source}
-> >
-> > ~~~
-> > ['416-325-6200', '416-325-6195', '416-243-7984', '416-243-0327']
-> > ~~~
-> > {: .output}
-> >
-> {: .solution}
->
-{: .challenge}
+{: .callout}
+
+> ## Using Regular Expressions with XPath
+In combination with XPath queries, it is also possible to use [Regular Expressions](https://en.wikipedia.org/wiki/Regular_expression)
+to scrape the contents of a web page. For the sake of time, we won't do this today, but you can learn more about how to do this by taking a look at the [Library Carpentries official version of this lesson](https://librarycarpentry.org/lc-webscraping/04-scrapy/index.html)
 
 
 Once we have found XPath queries to run on the detail pages and are happy with the result,
-we can add them to the `get_details()` method of our spider:
-
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+we can add them to the `get_details()` method of our spider. We will also add the `normalize-space` XPath function, which we saw the Scraper extension lesson earlier.
 
 ~~~
 import scrapy
 
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses" # The name of this spider
-    
-    # The allowed domain and the URLs where the spider should start crawling:
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
+
+class IfabiosSpider(scrapy.Spider):
+    name = 'ifabios'
+    allowed_domains = ['www.nyu.edu/gsas/dept/fineart/people/']
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
 
     def parse(self, response):
-        # The main method of the spider. It scrapes the URL(s) specified in the
-        # 'start_url' argument above. The content of the scraped URL is passed on
-        # as the 'response' object.
-        
-        for url in response.xpath("//*[@class='mppcell']/a/@href").extract()[:5]:
-            # This loops through all the URLs found inside an element of class 'mppcell'
-			
-            # Constructs an absolute URL by combining the response’s URL with a possible relative URL:
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract()[:5]:
             full_url = response.urljoin(url)
             print("Found URL: "+full_url)
             
-            # The following tells Scrapy to scrape the URL in the 'full_url' variable
-            # and calls the 'get_details() method below with the content of this
-            # URL:
-            yield scrapy.Request(full_url, callback=self.get_details)
+            yield scrapy.Request(full_url, callback=self.get_details,dont_filter=True)
     
     def get_details(self, response):
-        # This method is called on by the 'parse' method above. It scrapes the URLs
-        # that have been extracted in the previous step.
-        name_detail = response.xpath("normalize-space(//div[@class='mppdetails']/h1/text())").extract_first()
-        phone_detail = response.xpath("normalize-space(//div[@class='phone']/text())").extract_first()
-        email_detail = response.xpath("normalize-space(//div[@class='email']/a/text())").extract_first()
-        print("Found details: " + name_detail + ', ' + phone_detail + ', ' + email_detail)
+        print("Visited URL: "+response.url)
+
+        faculty_name = response.xpath("normalize-space(//div[@id='MainContent']//*[@class='heading']/text())").extract_first()
+        brief_bio = response.xpath("normalize-space(//div[@class='statement']/article/p/text())").extract_first()
+        
+        print("Found name and bio: " + faculty_name +"----" + brief_bio)
 ~~~
 {: .source}
 
 Running our scraper again
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
 produces something like
 
 ~~~
-2017-02-27 20:39:42 [scrapy.utils.log] INFO: Scrapy 1.3.2 started (bot: ontariompps)
-(...)
-2017-02-27 20:39:43 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.ontla.on.ca/web/members/members_current.do?locale=en/> (referer: None)
-Found URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085
-Found URL: http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7275
-(...)
-Found details: Ted Arnott, MPP (Wellington—Halton Hills), 416-325-3880, ted.arnott@pc.ola.org
-Found details: Teresa J. Armstrong, MPP (London—Fanshawe), 416-325-1872, tarmstrong-qp@ndp.on.ca
-(...)
-2017-02-27 20:39:44 [scrapy.core.engine] INFO: Closing spider (finished)
+...
+
+2020-11-03 12:07:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm> (referer: None)
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/poggi.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/ellis.htm
+Found URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm
+2020-11-03 12:07:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm> (referer: http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm)
+Visited URL: http://www.nyu.edu/gsas/dept/fineart/people/faculty/thomas.htm
+Found name and bio: Thelma K. Thomas----Within my specialized fields of Late Antique, Early Christian, Byzantine, and Eastern Christian art, architecture, and archaeology, my present primary research interests are material and visual culture, materiality, and historiography. Topics of recent research include dress and identity, ancient and modern art commerce, the luxury arts, and visual rhetoric, especially as they reveal intercultural contact and syncretistic expressions. Recurrent subjects are sculpture, textiles, wall and panel painting, and private devotional, particularly monastic, arts. My current book project on painted commemorative portraits in Late Antique Egyptian monasticism, emphasizing the construction, maintenance, and presentation of identity through dress has rekindled my interest in funerary arts, the subject of my first single-author book,
+
+...
 ~~~
 {: .output}
 
 We appear to be getting somewhere! The last step is doing something useful with the
-scraped data instead of printing it out on the terminal. Enter the Scrapy Items.
+scraped data instead of printing it out on the terminal. For this, we'll use Scrapy Items.
 
 ## Using Items to store scraped data
 
@@ -1017,18 +984,16 @@ store individual data element. Another way to put it is, if you visualize the
 data as a spreadsheet, each Item represents a row of data, and the fields within
 each item are columns.
 
-Before we can begin using Items, we need to define their structure. Using our editor,
-let's navigate and edit the following file that Scrapy has created for us when we
-first created our project: `ontariompps/ontariompps/items.py`
+Before we can begin using Items, we need to define their structure. Let's edit the `items.py` file that Scrapy has created for us when we
+first created our project. If you are using JupyterHub, open this file in a new tab by navigating to the second `ifafaculty` folder: `ifafaculty/ifafaculty/items.py`
 
-Scrapy has pre-populated this file with an empty "OntariomppsItem" class:
+Scrapy has pre-populated this file with an empty "IfabiosItem" class:
 
-(editing `ontariompps/ontariompps/items.py`)
 
 ~~~
 import scrapy
 
-class OntariomppsItem(scrapy.Item):
+class IfafacultyItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
@@ -1041,55 +1006,38 @@ for each politician:
 ~~~
 import scrapy
 
-class OntariomppsItem(scrapy.Item):
+class IfafacultyItem(scrapy.Item):
     # define the fields for your item here like:
-    name = scrapy.Field()
-    phone = scrapy.Field()
-    email = scrapy.Field()
+    faculty_name = scrapy.Field()
+    brief_bio = scrapy.Field()
 ~~~
 {: .source}
 
 Then save this file. We can then edit our spider one more time:
 
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
 
 ~~~
 import scrapy
-from ontariompps.items import OntariomppsItem # We need this so that Python knows about the item object
+from ifafaculty.items import IfafacultyItem # We need this so that Python knows about the item object
 
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses" # The name of this spider
-    
-    # The allowed domain and the URLs where the spider should start crawling:
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
+class IfabiosSpider(scrapy.Spider):
+    name = 'ifabios'
+    allowed_domains = ['www.nyu.edu/gsas/dept/fineart/people/']
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
 
     def parse(self, response):
-        # The main method of the spider. It scrapes the URL(s) specified in the
-        # 'start_url' argument above. The content of the scraped URL is passed on
-        # as the 'response' object.
-		
-        for url in response.xpath("//*[@class='mppcell']/a/@href").extract()[:5]:
-            # This loops through all the URLs found inside an element of class 'mppcell'
-            
-            # Constructs an absolute URL by combining the response’s URL with a possible relative URL:
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract()[:5]:
             full_url = response.urljoin(url)
             print("Found URL: "+full_url)
-			
-            # The following tells Scrapy to scrape the URL in the 'full_url' variable
-            # and calls the 'get_details() method below with the content of this
-            # URL:
-            yield scrapy.Request(full_url, callback=self.get_details)
+            
+            yield scrapy.Request(full_url, callback=self.get_details,dont_filter=True)
     
     def get_details(self, response):
-        # This method is called on by the 'parse' method above. It scrapes the URLs
-        # that have been extracted in the previous step.
         
-        item = OntariomppsItem() # Creating a new Item object
-        # Store scraped data into that item:
-        item['name'] = response.xpath("normalize-space(//div[@class='mppdetails']/h1/text())").extract_first()
-        item['phone'] = response.xpath("normalize-space(//div[@class='phone']/text())").extract_first()
-        item['email'] = response.xpath("normalize-space(//div[@class='email']/a/text())").extract_first()
+        item = IfafacultyItem()
+
+        item['faculty_name'] = response.xpath("normalize-space(//div[@id='MainContent']//*[@class='heading']/text())").extract_first()
+        item['brief_bio'] = response.xpath("normalize-space(//div[@class='statement']/article/p/text())").extract_first()
 	    
         # Return that item to the main spider method:
         yield item
@@ -1098,34 +1046,51 @@ class MppaddressesSpider(scrapy.Spider):
 {: .source}
 
 We made two significant changes to the file above:
-* We've included the line `from ontariompps.items import OntariomppsItem` at the top. This is required
-  so that our spider knows about the `OntariomppsItem` object we've just defined.
-* We've also replaced the `print` statements in `get_details()` with the creation of an `OntariomppsItem`
+* We've included the line `from ifafaculty.items import IfafacultyItem` at the top. This is required
+  so that our spider knows about the `IfafacultyItem` object we've just defined.
+* We've also replaced the `print` statements in `get_details()` with the creation of an `IfafacultyItem`
   object, in which fields we are now storing the scraped data. The item is then passed back to the
   main spider method using the `yield` statement.
   
 If we now run our spider again:
 
 ~~~
-scrapy crawl mppaddresses
+scrapy crawl ifabios
 ~~~
 {: .source}
 
 we see something like
 
 ~~~
-2017-02-27 21:53:52 [scrapy.utils.log] INFO: Scrapy 1.3.2 started (bot: ontariompps)
-(...)
-2017-02-27 21:53:54 [scrapy.core.scraper] DEBUG: Scraped from <200 http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7085>
-{'email': 'lalbanese.mpp@liberal.ola.org',
- 'name': 'Hon Laura Albanese, MPP (York South—Weston)',
- 'phone': '416-325-6200'}
-2017-02-27 21:53:54 [scrapy.core.scraper] DEBUG: Scraped from <200 http://www.ontla.on.ca/web/members/members_detail.do?locale=en&ID=7183>
-{'email': 'tarmstrong-qp@ndp.on.ca',
- 'name': 'Teresa J. Armstrong, MPP (London—Fanshawe)',
- 'phone': '416-325-1872'}
-(...)
-2017-02-27 21:53:54 [scrapy.core.engine] INFO: Spider closed (finished)
+...
+
+2020-11-03 12:27:54 [scrapy.core.scraper] DEBUG: Scraped from <200 http://www.nyu.edu/gsas/dept/fineart/people/faculty/sullivan.htm>
+{'brief_bio': 'My intellectual formation at the IFA in Early Modern art with a '
+              'concentration on southern Europe was an excellent preparation '
+              'for my later studies in the art of the Americas. I began '
+              'teaching at NYU in the early 1980s at the Department of Art '
+              'History where I also served as Chair for some thirteen years. '
+              'From 2003 to 2009 I served as FAS Dean for the Humanities while '
+              'continuing my teaching and research. I was invited to teach at '
+              'the IFA in 1991, offering a seminar on Mexican art of the '
+              'twentieth century. The IFA became my principal department in '
+              '2010 and I currently teach two graduate courses (seminars and '
+              'lecture courses) and one undergraduate course per year. I have '
+              'a long-standing interest in the arts and visual cultures of the '
+              'Americas with a particular concentration in the Spanish and '
+              'Portuguese speaking countries of Latin America and the '
+              'Caribbean. Looking at the greater importance of the diasporas '
+              '(African, Asian) to the Americas also deeply informs my work as '
+              'does a keen interest in modern and contemporary Latinx art '
+              'about which I have written extensively. Nonetheless what '
+              'characterizes my work and teaching perhaps more than anything '
+              'else is my desire to cross borders and look beyond the confines '
+              'of the places I examine. I am interested in socio-political '
+              'approaches to art history combined with broader theoretical '
+              'concerns. In all of my work the object of art is a principal '
+              'focus of interest. My 2007 book\xa0',
+ 'faculty_name': 'Edward J. Sullivan'}
+ ...
 ~~~
 {: .output}
 
@@ -1136,7 +1101,7 @@ But let's now try running the spider with an extra `-o` ('o' for 'output') argum
 specifies the name of an output file with a `.csv` file extension:
 
 ~~~
-scrapy crawl mppaddresses -o output.csv
+scrapy crawl ifabios -o output.csv
 ~~~
 {: .source}
 
@@ -1154,12 +1119,8 @@ cat output.csv
 Returns
 
 ~~~
-email,name,phone
-bob.bailey@pc.ola.org,"Robert Bailey, MPP (Sarnia—Lambton)",416-325-1715
-ganderson.mpp.co@liberal.ola.org,"Granville Anderson, MPP (Durham)",416-325-5494
-ted.arnott@pc.ola.org,"Ted Arnott, MPP (Wellington—Halton Hills)",416-325-3880
-lalbanese.mpp@liberal.ola.org,"Hon Laura Albanese, MPP (York South—Weston)",416-325-6200
-tarmstrong-qp@ndp.on.ca,"Teresa J. Armstrong, MPP (London—Fanshawe)",416-325-1872
+brief_bio,faculty_name
+"Within my specialized fields of Late Antique, Early Christian, Byzantine, and Eastern Christian art, architecture, and archaeology, my present primary research interests are material and visual culture, materiality, and historiography. Topics of recent research include dress and identity, ancient and modern art commerce, the luxury arts, and visual rhetoric, especially as they reveal intercultural contact and syncretistic expressions. Recurrent subjects are sculpture, textiles, wall and panel painting, and private devotional, particularly monastic, arts. My current book project on painted commemorative portraits in Late Antique Egyptian monasticism, emphasizing the construction, maintenance, and presentation of identity through dress has rekindled my interest in funerary arts, the subject of my first single-author book,",Thelma K. Thomas
 ~~~
 {: .output}
 
@@ -1169,70 +1130,54 @@ Refer to the [Scrapy documentation](http://doc.scrapy.org/en/latest/topics/feed-
 for a full list of supported formats.
 
 Now that everything looks to be in place, we can finally remove our limit to the number
-of scraped elements...
-
-(editing `ontariompps/ontariompps/spiders/mppaddresses.py`)
+of scraped elements by deleting `[:5]`...
 
 ~~~
 import scrapy
-from ontariompps.items import OntariomppsItem # We need this so that Python knows about the item object
 
-class MppaddressesSpider(scrapy.Spider):
-    name = "mppaddresses" # The name of this spider
-    
-    # The allowed domain and the URLs where the spider should start crawling:
-    allowed_domains = ["www.ontla.on.ca"]
-    start_urls = ['http://www.ontla.on.ca/web/members/members_current.do?locale=en/']
+from ifafaculty.items import IfafacultyItem # We need this so that Python knows about the item object
+
+class IfabiosSpider(scrapy.Spider):
+    name = 'ifabios'
+    allowed_domains = ['www.nyu.edu/gsas/dept/fineart/people/']
+    start_urls = ['http://www.nyu.edu/gsas/dept/fineart/people/faculty.htm']
 
     def parse(self, response):
-        # The main method of the spider. It scrapes the URL(s) specified in the
-        # 'start_url' argument above. The content of the scraped URL is passed on
-        # as the 'response' object.
-        for url in response.xpath("//*[@class='mppcell']/a/@href").extract():
-            # This loops through all the URLs found inside an element of class 'mppcell'
-            
-            # Constructs an absolute URL by combining the response’s URL with a possible relative URL:
+        for url in response.xpath("//td[@class='contentFaculty']//a/@href").extract():
             full_url = response.urljoin(url)
             print("Found URL: "+full_url)
             
-            # The following tells Scrapy to scrape the URL in the 'full_url' variable
-            # and calls the 'get_details() method below with the content of this
-            # URL:
-            yield scrapy.Request(full_url, callback=self.get_details)
+            yield scrapy.Request(full_url, callback=self.get_details,dont_filter=True)
     
     def get_details(self, response):
-        # This method is called on by the 'parse' method above. It scrapes the URLs
-        # that have been extracted in the previous step.
         
-        item = OntariomppsItem() # Creating a new Item object
-        # Store scraped data into that item:
-        item['name'] = response.xpath("normalize-space(//div[@class='mppdetails']/h1/text())").extract_first()
-        item['phone'] = response.xpath("normalize-space(//div[@class='phone']/text())").extract_first()
-        item['email'] = response.xpath("normalize-space(//div[@class='email']/a/text())").extract_first()
-	    
+        item = IfafacultyItem()
+        
+        item['faculty_name'] = response.xpath("normalize-space(//div[@id='MainContent']//*[@class='heading']/text())").extract_first()
+        item['brief_bio'] = response.xpath("normalize-space(//div[@class='statement']/article/p/text())").extract_first()
+        
         # Return that item to the main spider method:
         yield item
+
 ~~~
 {: .source}
-
-(we've removed the `[:5]` at the end of the for loop on line 16 of the above code)
 
 ... and run our spider one last time:
 
 ~~~
-scrapy crawl mppaddresses -o mppaddresses.csv
+scrapy crawl ifabios -o output.csv
 ~~~
 {: .source}
 
 > ## Add other data elements to the spider
 >
-> Try modifying the spider code to add more data extracted from the MPP detail page.
+> Try modifying the spider code to add more data extracted from the IFA faculty detail page.
 > Remember to edit the Item definition to allow for all extracted fields to be taken
 > care of.
 >
 {: .challenge}
 
-You are now ready to write your own spiders!
+Congratulations! You are now ready to write your own spiders!
 
 # Reference
 

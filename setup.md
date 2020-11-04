@@ -17,7 +17,10 @@ For the first half of the lesson, we will use a Chrome browser extension to get 
 
 ### Shell and Python
 The second part of the lesson requires the Python programming language and access to a command-line interface (shell) on your computer.
-Please refer to [the Software Carpentry setup instructions](http://swcarpentry.github.io/workshop-template/#setup) for
+
+Please note: for the NYU Libraries Library Carpentry workshop, you can access everything you need for this lesson via a web browser by using NYU's [JupyterHub](https://tutorials-1.rcnyu.org/hub/login)
+
+If you would prefer to work locally on your own machine, please refer to [the Software Carpentry setup instructions](http://swcarpentry.github.io/workshop-template/#setup) for
 *the Bash shell* and *Python* if you need guidance.
 
 > ## Prerequisites
