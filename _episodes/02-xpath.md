@@ -351,4 +351,4 @@ Array [ <blockquote.challenge>, <blockquote.challenge>, <blockquote.challenge>, 
 # References
 
 * [W3Schools: JavaScript HTML DOM Navigation](http://www.w3schools.com/js/js_htmldom_navigation.asp)
-* [XPath Cheatsheet](/lc-webscraping/extras/xpath-cheatsheet.md.pdf)
+* [XPath Cheatsheet]({{ '/xpath-cheatsheet/index.html' | absolute_url }})
