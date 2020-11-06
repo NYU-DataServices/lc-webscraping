@@ -15,6 +15,8 @@ keypoints:
 - "Web scraping is the process of automating the extraction of data from web sites."
 ---
 
+For today's NYU workshop, this section will be shared via [Google slides](https://docs.google.com/presentation/d/1ykf52go9jGd4NGqWPAGHP2KBmAMPLNYyAb6CGQ_jAv8/edit?usp=sharing)
+
 ## What is web scraping?
 
 Web scraping is a technique for extracting information from websites. This can be done manually
