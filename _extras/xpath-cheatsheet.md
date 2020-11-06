@@ -12,7 +12,7 @@ title: XPath Cheatsheet
 | `..`         | Select the parent of the context node                                                                                                  |
 | `@`          | Select attributes                                                                                                                      |
 | `text()`     | Select the value of an element                                                                                                         |
-| `|`         | Pipe chains expressions and brings back results from either expression, think of a set union                                           |
+| `\|`         | Pipe chains expressions and brings back results from either expression, think of a set union                                           |
 
 | Operator   | Explanation |
 |:-----------------|:-------------|
