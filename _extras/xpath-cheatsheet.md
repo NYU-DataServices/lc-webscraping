@@ -3,19 +3,19 @@ layout: page
 title: XPath Cheatsheet
 ---
 
-| Expression   | Description |
-|-----------------|:-------------|
-| ```nodename```| Select all nodes with the name "nodename"   |
-| ```/```  | A beginning single slash indicates a select from the root node, subsequent slashes indicate selecting a child node from current node  |
-| ```//``` | Select direct and indirect child nodes in the document from the current node - this gives you the ability to "skip levels" |
-| ```.```       | Select the current context node   |
-|```..```  | Select the parent of the context node|
-|```@```   |Select attributes|
-|`text()`| Select the value of an element|
-| &#124;|Pipe chains expressions and brings back results from either expression, think of a set union |
+| Expression | Description    |                                                                                                                     
+|:------------|:--------------|
+| `nodename`   | Select all nodes with the name "nodename"                                                                                              |
+| `/`          | A beginning single slash indicates a select from the  root node, subsequent slashes indicate selecting a child node from  current node |
+| `//`         | Select direct and indirect child nodes in the document from the current node - this gives you the ability to "skip levels"             |
+| `.`          | Select the current context node                                                                                                        |
+| `..`         | Select the parent of the context node                                                                                                  |
+| `@`          | Select attributes                                                                                                                      |
+| `text()`     | Select the value of an element                                                                                                         |
+| `|`         | Pipe chains expressions and brings back results from either expression, think of a set union                                           |
 
 | Operator   | Explanation |
-|-----------------|:-------------|
+|:-----------------|:-------------|
 |```=```|Equivalent comparison, can be used for numeric or text values|
 |```!=```|Is not equivalent comparison|
 |```>, >=```|Greater than, greater than or equal to|
@@ -29,7 +29,7 @@ Note: Using '!=' is not the same as using 'not'.
 ### Predicates
 
 | Operator   | Explanation |
-|-----------------|:-------------|
+|:-----------------|:-------------|
 | ```[1]```  |Select the first node|
 | ```[last()]```  |Select the last node|
 | ```[last()-1]```  |Select the last but one node (also known as the second last node)|
