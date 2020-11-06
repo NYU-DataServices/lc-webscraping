@@ -1,3 +1,7 @@
+---
+layout: page
+title: XPath Cheatsheet
+---
 # XPath Cheatsheet
 | Expression   | Description |
 |-----------------|:-------------|
